@@ -1,4 +1,8 @@
-"""Run this script to capture images for training the face recognizer.
+""" 
+     
+     This script can be used to capture images for an individual to be 
+     added to a face library for face learning.
+
 """
 import os
 import sys
