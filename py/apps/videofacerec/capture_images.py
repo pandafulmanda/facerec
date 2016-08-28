@@ -11,6 +11,10 @@ import select
 import cv2
 import numpy as np
 
+# This system command loads the right drivers for the Raspberry Pi camera
+#os.system('sudo modprobe bcm2835-v4l2')
+
+
 # Directories which contain the positive and negative training image data.
 IMAGE_DIR = './orl_faces'
 
@@ -184,6 +188,8 @@ def img_name(img_num):
 	return switcher.get(img_num, "nothing")
 
 if __name__ == '__main__':
+
+	#ubuntu camera
 	camera = cv2.VideoCapture(0)
 	ret = camera.set(3,320)
 	ret = camera.set(4,240)
