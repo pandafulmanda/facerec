@@ -4,7 +4,7 @@
 # Copyright (c) Philipp Wagner. All rights reserved.
 # Licensed under the BSD license. See LICENSE file in the project root for full license information.
 
-import cPickle
+import _pickle as cPickle
 
 def save_model(filename, model):
     output = open(filename, 'wb')

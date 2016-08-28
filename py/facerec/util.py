@@ -14,10 +14,10 @@ def read_image(filename):
         im = Image.open(os.path.join(filename))
         im = im.convert("L") # convert to greyscale
         imarr = np.array(im, dtype=np.uint8)
-    except IOError as (errno, strerror):
-        print "I/O error({0}): {1}".format(errno, strerror)
+    except IOError as err:
+        print ("I/O error({0}): {1}".format(err.errno, err.strerror))
     except:
-        print "Cannot open image."
+        print ("Cannot open image.")
     return imarr
 
 def asRowMatrix(X):

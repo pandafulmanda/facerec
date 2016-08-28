@@ -7,10 +7,11 @@
 import logging
 # cv2 and helper:
 import cv2
+import sys
+
 from helper.common import *
 from helper.video import *
 # add facerec to system path
-import sys
 sys.path.append("../..")
 # facerec imports
 from facerec.model import PredictableModel
@@ -91,10 +92,10 @@ def read_images(path, image_size=None):
                         im = cv2.resize(im, image_size)
                     X.append(np.asarray(im, dtype=np.uint8))
                     y.append(c)
-                except IOError, (errno, strerror):
-                    print "I/O error({0}): {1}".format(errno, strerror)
+                except IOError:
+                    print ("I/O error({0}): {1}".format(err.errno, err.strerror))
                 except:
-                    print "Unexpected error:", sys.exc_info()[0]
+                    print ("Unexpected error:", sys.exc_info()[0])
                     raise
             c = c+1
     return [X,y,folder_names]
@@ -110,7 +111,7 @@ class App(object):
         while True:
             ret, frame = self.cam.read()
             # Resize the frame to half the original size for speeding up the detection process:
-            img = cv2.resize(frame, (frame.shape[1]/2, frame.shape[0]/2), interpolation = cv2.INTER_CUBIC)
+            img = cv2.resize(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)), interpolation = cv2.INTER_CUBIC)
             imgout = img.copy()
             for i,r in enumerate(self.detector.detect(img)):
                 x0,y0,x1,y1 = r
@@ -150,23 +151,33 @@ if __name__ == '__main__':
         help="Sets the path to the Haar Cascade used for the face detection part (default: haarcascade_frontalface_alt2.xml).")
     # Show the options to the user:
     parser.print_help()
-    print "Press [ESC] to exit the program!"
-    print "Script output:"
+    print ("Press [ESC] to exit the program!")
+    print ("Script output:")
     # Parse arguments:
     (options, args) = parser.parse_args()
     # Check if a model name was passed:
     if len(args) == 0:
-        print "[Error] No prediction model was given."
+        print ("[Error] No prediction model was given.")
         sys.exit()
+    if options.size:
+        print (options.size)
+    if options.numfolds:
+        print (options.numfolds)
+    if options.dataset:
+        print (options.dataset)
+    if options.camera_id:
+        print (options.camera_id)
+    if options.cascade_filename:
+        print (options.cascade_filename)
     # This model will be used (or created if the training parameter (-t, --train) exists:
     model_filename = args[0]
     # Check if the given model exists, if no dataset was passed:
     if (options.dataset is None) and (not os.path.exists(model_filename)):
-        print "[Error] No prediction model found at '%s'." % model_filename
+        print ("[Error] No prediction model found at '%s'." % model_filename)
         sys.exit()
     # Check if the given (or default) cascade file exists:
     if not os.path.exists(options.cascade_filename):
-        print "[Error] No Cascade File found at '%s'." % options.cascade_filename
+        print ("[Error] No Cascade File found at '%s'." % options.cascade_filename)
         sys.exit()
     # We are resizing the images to a fixed size, as this is neccessary for some of
     # the algorithms, some algorithms like LBPH don't have this requirement. To 
@@ -175,20 +186,20 @@ if __name__ == '__main__':
     try:
         image_size = (int(options.size.split("x")[0]), int(options.size.split("x")[1]))
     except:
-        print "[Error] Unable to parse the given image size '%s'. Please pass it in the format [width]x[height]!" % options.size
+        print ("[Error] Unable to parse the given image size '%s'. Please pass it in the format [width]x[height]!" % options.size)
         sys.exit()
     # We have got a dataset to learn a new model from:
     if options.dataset:
         # Check if the given dataset exists:
         if not os.path.exists(options.dataset):
-            print "[Error] No dataset found at '%s'." % dataset_path
+            print ("[Error] No dataset found at '%s'." % dataset_path)
             sys.exit()    
         # Reads the images, labels and folder_names from a given dataset. Images
         # are resized to given size on the fly:
-        print "Loading dataset..."
+        print ("Loading dataset...")
         [images, labels, subject_names] = read_images(options.dataset, image_size)
         # Zip us a {label, name} dict from the given data:
-        list_of_labels = list(xrange(max(labels)+1))
+        list_of_labels = list(range(max(labels)+1))
         subject_dictionary = dict(zip(list_of_labels, subject_names))
         # Get the model we want to compute:
         model = get_model(image_size=image_size, subject_names=subject_dictionary)
@@ -196,7 +207,7 @@ if __name__ == '__main__':
         # given, the script allows you to perform a k-fold Cross Validation before
         # the Detection & Recognition part starts:
         if options.numfolds:
-            print "Validating model with %s folds..." % options.numfolds
+            print ("Validating model with %s folds..." % options.numfolds)
             # We want to have some log output, so set up a new logging handler
             # and point it to stdout:
             handler = logging.StreamHandler(sys.stdout)
@@ -211,22 +222,22 @@ if __name__ == '__main__':
             crossval.validate(images, labels)
             crossval.print_results()
         # Compute the model:
-        print "Computing the model..."
+        print ("Computing the model...")
         model.compute(images, labels)
         # And save the model, which uses Pythons pickle module:
-        print "Saving the model..."
+        print ("Saving the model...")
         save_model(model_filename, model)
     else:
-        print "Loading the model..."
+        print ("Loading the model...")
         model = load_model(model_filename)
     # We operate on an ExtendedPredictableModel. Quit the application if this
     # isn't what we expect it to be:
     if not isinstance(model, ExtendedPredictableModel):
-        print "[Error] The given model is not of type '%s'." % "ExtendedPredictableModel"
+        print ("[Error] The given model is not of type '%s'." % "ExtendedPredictableModel")
         sys.exit()
     # Now it's time to finally start the Application! It simply get's the model
     # and the image size the incoming webcam or video images are resized to:
-    print "Starting application..."
+    print ("Starting application...")
     App(model=model,
         camera_id=options.camera_id,
         cascade_filename=options.cascade_filename).run()

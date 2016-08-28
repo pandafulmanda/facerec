@@ -36,7 +36,7 @@ def shuffle(X, y):
 
             Shuffled input arrays.
     """
-    idx = np.argsort([random.random() for i in xrange(len(y))])
+    idx = np.argsort([random.random() for i in range(len(y))])
     y = np.asarray(y)
     X = [X[i] for i in idx]
     y = y[idx]
@@ -131,9 +131,9 @@ class ValidationStrategy(object):
         
     
     def print_results(self):
-        print self.model
+        print (self.model)
         for validation_result in self.validation_results:
-            print validation_result
+            print (validation_result)
 
     def __repr__(self):
         return "Validation Kernel (model=%s)" % (self.model)

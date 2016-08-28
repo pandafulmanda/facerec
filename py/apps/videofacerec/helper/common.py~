@@ -1,24 +1,15 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
-This module contains some common routines used by other samples.
+This module contais some common routines used by other samples.
 '''
-
-# Python 2/3 compatibility
-from __future__ import print_function
-import sys
-PY3 = sys.version_info[0] == 3
-
-if PY3:
-    from functools import reduce
 
 import numpy as np
 import cv2
-
-# built-in modules
 import os
-import itertools as it
 from contextlib import contextmanager
+import itertools as it
 
 image_extensions = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.pbm', '.pgm', '.ppm']
 
@@ -78,8 +69,7 @@ def mtx2rvec(R):
     axis = np.cross(vt[0], vt[1])
     return axis * np.arctan2(s, c)
 
-def draw_str(dst, target, s):
-    x, y = target
+def draw_str(dst, (x, y), s):
     cv2.putText(dst, s, (x+1, y+1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv2.LINE_AA)
     cv2.putText(dst, s, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv2.LINE_AA)
 
@@ -100,15 +90,14 @@ class Sketcher:
         pt = (x, y)
         if event == cv2.EVENT_LBUTTONDOWN:
             self.prev_pt = pt
-        elif event == cv2.EVENT_LBUTTONUP:
-            self.prev_pt = None
-
         if self.prev_pt and flags & cv2.EVENT_FLAG_LBUTTON:
             for dst, color in zip(self.dests, self.colors_func()):
                 cv2.line(dst, self.prev_pt, pt, color, 5)
             self.dirty = True
             self.prev_pt = pt
             self.show()
+        else:
+            self.prev_pt = None
 
 
 # palette data from matplotlib/_cm.py
@@ -144,12 +133,12 @@ def clock():
 
 @contextmanager
 def Timer(msg):
-    print(msg, '...',)
+    print msg, '...',
     start = clock()
     try:
         yield
     finally:
-        print("%.2f ms" % ((clock()-start)*1000))
+        print "%.2f ms" % ((clock()-start)*1000)
 
 class StatValue:
     def __init__(self, smooth_coef = 0.5):
@@ -201,11 +190,7 @@ class RectSelector:
 def grouper(n, iterable, fillvalue=None):
     '''grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx'''
     args = [iter(iterable)] * n
-    if PY3:
-        output = it.zip_longest(fillvalue=fillvalue, *args)
-    else:
-        output = it.izip_longest(fillvalue=fillvalue, *args)
-    return output
+    return it.izip_longest(fillvalue=fillvalue, *args)
 
 def mosaic(w, imgs):
     '''Make a grid from images.
@@ -214,10 +199,7 @@ def mosaic(w, imgs):
     imgs -- images (must have same size and format)
     '''
     imgs = iter(imgs)
-    if PY3:
-        img0 = next(imgs)
-    else:
-        img0 = imgs.next()
+    img0 = imgs.next()
     pad = np.zeros_like(img0)
     imgs = it.chain([img0], imgs)
     rows = grouper(w, imgs, pad)
@@ -234,3 +216,4 @@ def draw_keypoints(vis, keypoints, color = (0, 255, 255)):
     for kp in keypoints:
             x, y = kp.pt
             cv2.circle(vis, (int(x), int(y)), 2, color)
+

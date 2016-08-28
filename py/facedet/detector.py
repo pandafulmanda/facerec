@@ -101,7 +101,7 @@ class SkinFaceDetector(Detector):
 			face = src[y0:y1,x0:x1]
 			skinPixels = self.skinDetector.detect(face)
 			skinPercentage = float(np.sum(skinPixels)) / skinPixels.size
-			print skinPercentage
+			print (skinPercentage)
 			if skinPercentage > self.threshold:
 				rects.append(r)
 		return rects
