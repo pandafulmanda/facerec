@@ -23,6 +23,9 @@ from facerec.serialization import save_model, load_model
 # for face detection (you can also use OpenCV2 directly):
 from facedet.detector import CascadedDetector
 
+# This system command loads the right drivers for the Raspberry Pi camera
+#os.system('sudo modprobe bcm2835-v4l2')
+
 class ExtendedPredictableModel(PredictableModel):
     """ Subclasses the PredictableModel to store some more
         information, so we don't need to pass the dataset
