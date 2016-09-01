@@ -172,7 +172,7 @@ class SVM(AbstractClassifier):
                     is specified). If k is the number of classes, for decision values,
                     each element includes results of predicting k(k-1)/2 binary-class
                     SVMs. For probabilities, each element contains k values indicating
-                    the probability that the testing instance is in each class.
+                    the probability that the testing instance is in each class.	
                     Note that the order of classes here is the same as 'model.label'
                     field in the model structure.
         """

@@ -123,13 +123,11 @@ class App(object):
                 face = cv2.cvtColor(face,cv2.COLOR_BGR2GRAY)
                 face = cv2.resize(face, self.model.image_size, interpolation = cv2.INTER_CUBIC)
                 # Get a prediction from the model:
-                prediction = self.model.predict(face)[0]
-                confidence = self.model.predict(face)[1]
+                prediction, confidence = self.model.predict(face)
                 # Draw the face area in image:
                 cv2.rectangle(imgout, (x0,y0),(x1,y1),(0,255,0),2)
                 # Draw the predicted name (folder name...):
-                if confidence["distances"][0] < 550:
-                        draw_str(imgout, (x0-20,y0-20), self.model.subject_names[prediction] + " " + str(confidence["distances"][0]))
+                draw_str(imgout, (x0-20,y0-20), self.model.subject_names[prediction] + " " + )
             cv2.imshow('videofacerec', imgout)
             # Show image & exit on escape:
             ch = cv2.waitKey(10)

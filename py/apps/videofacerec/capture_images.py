@@ -190,7 +190,7 @@ def img_name(img_num):
 if __name__ == '__main__':
 
 	#ubuntu camera
-	camera = cv2.VideoCapture(0)
+	camera = cv2.VideoCapture(1)
 	ret = camera.set(3,320)
 	ret = camera.set(4,240)
 	print ('This app will capture several images to learn your face.')
@@ -217,6 +217,7 @@ if __name__ == '__main__':
 		# Crop image as close as possible to desired face aspect ratio.
 		# Might be smaller if face is near edge of image.
 		img_crop = crop(image, x, y, w, h)
+		img_crop = resize(img_crop)
 		# Save image to file.
 		filename = os.path.join(img_dir, '%02d_%s_%s.pgm' % (img_num, name, img_name(img_num)))
 		cv2.imwrite(filename, img_crop)
