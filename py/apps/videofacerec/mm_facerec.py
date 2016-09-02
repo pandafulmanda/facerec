@@ -8,6 +8,7 @@ import logging
 # cv2 and helper:
 import cv2
 import sys
+import json
 
 from helper.common import *
 from helper.video import *
@@ -103,6 +104,13 @@ def read_images(path, image_size=None):
             c = c+1
     return [X,y,folder_names]
 
+def print_json(name):
+    d = { 'Name': name }
+    print ("Content-type: application/json")
+    print ()
+    print(json.dumps(d))
+
+
 
 class App(object):
     def __init__(self, model, camera_id, cascade_filename):
@@ -123,12 +131,19 @@ class App(object):
                 face = cv2.cvtColor(face,cv2.COLOR_BGR2GRAY)
                 face = cv2.resize(face, self.model.image_size, interpolation = cv2.INTER_CUBIC)
                 # Get a prediction from the model:
-                prediction, confidence = self.model.predict(face)
+                prediction = self.model.predict(face)[0]
+                confidence = self.model.predict(face)[1]["distances"][0]
                 # Draw the face area in image:
                 cv2.rectangle(imgout, (x0,y0),(x1,y1),(0,255,0),2)
                 # Draw the predicted name (folder name...):
-                draw_str(imgout, (x0-20,y0-20), self.model.subject_names[prediction] + " " + )
-            cv2.imshow('videofacerec', imgout)
+                #print (confidence)
+                if confidence < 550:
+                        print_json(self.model.subject_names[prediction])
+                        sys.exit()
+                elif confidence > 1200:
+                        print_json("Stranger")
+                        sys.exit()
+            #cv2.imshow('videofacerec', imgout)
             # Show image & exit on escape:
             ch = cv2.waitKey(10)
             if ch == 27:
@@ -139,6 +154,7 @@ if __name__ == '__main__':
     # model.pkl is a pickled (hopefully trained) PredictableModel, which is
     # used to make predictions. You can learn a model yourself by passing the
     # parameter -d (or --dataset) to learn the model from a given dataset.
+
     usage = "usage: %prog [options] model_filename"
     # Add options for training, resizing, validation and setting the camera id:
     parser = OptionParser(usage=usage)
@@ -153,25 +169,16 @@ if __name__ == '__main__':
     parser.add_option("-c", "--cascade", action="store", dest="cascade_filename", default="haarcascade_frontalface_alt2.xml",
         help="Sets the path to the Haar Cascade used for the face detection part (default: haarcascade_frontalface_alt2.xml).")
     # Show the options to the user:
-    parser.print_help()
-    print ("Press [ESC] to exit the program!")
-    print ("Script output:")
+
+    #parser.print_help()
+    #print ("Press [ESC] to exit the program!")
+    #print ("Script output:")
     # Parse arguments:
     (options, args) = parser.parse_args()
     # Check if a model name was passed:
     if len(args) == 0:
         print ("[Error] No prediction model was given.")
         sys.exit()
-    if options.size:
-        print (options.size)
-    if options.numfolds:
-        print (options.numfolds)
-    if options.dataset:
-        print (options.dataset)
-    if options.camera_id:
-        print (options.camera_id)
-    if options.cascade_filename:
-        print (options.cascade_filename)
     # This model will be used (or created if the training parameter (-t, --train) exists:
     model_filename = args[0]
     # Check if the given model exists, if no dataset was passed:
@@ -192,47 +199,8 @@ if __name__ == '__main__':
         print ("[Error] Unable to parse the given image size '%s'. Please pass it in the format [width]x[height]!" % options.size)
         sys.exit()
     # We have got a dataset to learn a new model from:
-    if options.dataset:
-        # Check if the given dataset exists:
-        if not os.path.exists(options.dataset):
-            print ("[Error] No dataset found at '%s'." % dataset_path)
-            sys.exit()    
-        # Reads the images, labels and folder_names from a given dataset. Images
-        # are resized to given size on the fly:
-        print ("Loading dataset...")
-        [images, labels, subject_names] = read_images(options.dataset, image_size)
-        # Zip us a {label, name} dict from the given data:
-        list_of_labels = list(range(max(labels)+1))
-        subject_dictionary = dict(zip(list_of_labels, subject_names))
-        # Get the model we want to compute:
-        model = get_model(image_size=image_size, subject_names=subject_dictionary)
-        # Sometimes you want to know how good the model may perform on the data
-        # given, the script allows you to perform a k-fold Cross Validation before
-        # the Detection & Recognition part starts:
-        if options.numfolds:
-            print ("Validating model with %s folds..." % options.numfolds)
-            # We want to have some log output, so set up a new logging handler
-            # and point it to stdout:
-            handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            # Add a handler to facerec modules, so we see what's going on inside:
-            logger = logging.getLogger("facerec")
-            logger.addHandler(handler)
-            logger.setLevel(logging.DEBUG)
-            # Perform the validation & print results:
-            crossval = KFoldCrossValidation(model, k=options.numfolds)
-            crossval.validate(images, labels)
-            crossval.print_results()
-        # Compute the model:
-        print ("Computing the model...")
-        model.compute(images, labels)
-        # And save the model, which uses Pythons pickle module:
-        print ("Saving the model...")
-        save_model(model_filename, model)
-    else:
-        print ("Loading the model...")
-        model = load_model(model_filename)
+
+    model = load_model(model_filename)
     # We operate on an ExtendedPredictableModel. Quit the application if this
     # isn't what we expect it to be:
     if not isinstance(model, ExtendedPredictableModel):
@@ -240,7 +208,7 @@ if __name__ == '__main__':
         sys.exit()
     # Now it's time to finally start the Application! It simply get's the model
     # and the image size the incoming webcam or video images are resized to:
-    print ("Starting application...")
+    #print ("Starting application...")
     App(model=model,
         camera_id=options.camera_id,
         cascade_filename=options.cascade_filename).run()
