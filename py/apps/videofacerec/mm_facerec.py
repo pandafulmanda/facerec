@@ -10,6 +10,11 @@ import cv2
 import sys
 import signal
 import json
+import os
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 
 from helper.common import *
 from helper.video import *
