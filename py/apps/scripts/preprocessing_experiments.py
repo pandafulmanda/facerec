@@ -89,7 +89,7 @@ def read_images(path, fileNameFilter=FileNameFilter("None"), sz=None):
             subject_path = os.path.join(dirname, subdirname)
             for filename in os.listdir(subject_path):
                 if fileNameFilter(filename):
-                    print filename
+                    print(filename)
                     try:
                         im = Image.open(os.path.join(subject_path, filename))
                         im = im.convert("L")
@@ -99,9 +99,9 @@ def read_images(path, fileNameFilter=FileNameFilter("None"), sz=None):
                         X.append(np.asarray(im, dtype=np.uint8))
                         y.append(c)
                     except IOError, (errno, strerror):
-                        print "I/O error({0}): {1}".format(errno, strerror)
+                        print("I/O error({0}): {1}".format(errno, strerror))
                     except:
-                        print "Unexpected error:", sys.exc_info()[0]
+                        print("Unexpected error:", sys.exc_info()[0])
                         raise
             c = c+1
     return [X,y]
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # the tutorial coming with this source code on how to prepare
     # your image data:
     if len(sys.argv) < 2:
-        print "USAGE: facerec_demo.py </path/to/images>"
+        print("USAGE: facerec_demo.py </path/to/images>")
         sys.exit()
     yale_filter = YaleBaseFilter(-25, 25, -25, 25)
     # Now read in the image data. This must be a valid path!

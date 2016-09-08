@@ -47,12 +47,12 @@ def extract_faces(src_dir, dst_dir, detector, face_sz = (130,130)):
 						x0,y0,x1,y1 = rect
 						face = img[y0:y1,x0:x1]
 						face = cv2.resize(face, face_sz, interpolation = cv2.INTER_CUBIC)
-						print os.path.join(dst_subdir, "%s_%s_%d%s" % (subdir, name,i,ext))
+						print(os.path.join(dst_subdir, "%s_%s_%d%s" % (subdir, name,i,ext)))
 						cv2.imwrite(os.path.join(dst_subdir, "%s_%s_%d%s" % (subdir, name,i,ext)), face)
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "usage: python extract_faces.py <src_dir> <dst_dir>"
+		print("usage: python extract_faces.py <src_dir> <dst_dir>")
 		sys.exit()
 	src_dir = sys.argv[1]
 	dst_dir = sys.argv[2]

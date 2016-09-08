@@ -8,6 +8,7 @@ import logging
 # cv2 and helper:
 import cv2
 import sys
+import signal
 import json
 
 from helper.common import *
@@ -104,27 +105,62 @@ def read_images(path, image_size=None):
             c = c+1
     return [X,y,folder_names]
 
-def print_json(name):
-    d = { 'Name': name }
-    print ("Content-type: application/json")
-    print ()
-    print(json.dumps(d))
-
-
+# taken from https://github.com/paviro/MMM-Facial-Recognition/blob/master/facerecognition/facerecognition.py#L34-L41
+def to_node(type, message):
+    # convert to json and print (node helper will read from stdout)
+    try:
+        if not isinstance(message, dict):
+            message = {"message": message}
+        print(json.dumps({type: message}))
+    except Exception:
+        pass
+    # stdout has to be flushed manually to prevent delays in the node helper communication
+    sys.stdout.flush()
 
 class App(object):
     def __init__(self, model, camera_id, cascade_filename):
+        signal.signal(signal.SIGINT, self.shutdown)
+
         self.model = model
         self.detector = CascadedDetector(cascade_fn=cascade_filename, minNeighbors=5, scaleFactor=1.1)
-        self.cam = create_capture(camera_id)
-            
+        
+        try:
+            self.cam = create_capture(camera_id)
+        except:
+            to_node("error", "Camera '%s' unable to connect." % camera_id)
+            sys.exit()
+
+        self.user = False
+        self.faces = False
+        self.has_changed = {"face_count": False, "user": False}
+        to_node("status", {"camera": str(camera_id), "model": str(model), "detector": str(self.detector)})
+
+    def find_faces(self, img):
+        faces = self.detector.detect(img)
+
+        self.has_changed['face_count'] = self.faces is False or len(faces) is not len(self.faces)
+        self.faces = faces
+
+        return(faces)
+
+    def shutdown(self, signum, stack):
+        to_node("status", 'Shutdown -- Cleaning up camera...')
+        self.cam.release()
+        cv2.destroyAllWindows()
+        sys.exit(0)
+
     def run(self):
         while True:
             ret, frame = self.cam.read()
             # Resize the frame to half the original size for speeding up the detection process:
             img = cv2.resize(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)), interpolation = cv2.INTER_CUBIC)
             imgout = img.copy()
-            for i,r in enumerate(self.detector.detect(img)):
+            self.find_faces(img)
+
+            if self.has_changed['face_count']:
+                to_node("change", {"face_count": len(self.faces)})
+
+            for i,r in enumerate(self.faces):
                 x0,y0,x1,y1 = r
                 # (1) Get face, (2) Convert to grayscale & (3) resize to image_size:
                 face = img[y0:y1, x0:x1]
@@ -137,78 +173,72 @@ class App(object):
                 cv2.rectangle(imgout, (x0,y0),(x1,y1),(0,255,0),2)
                 # Draw the predicted name (folder name...):
                 #print (confidence)
-                if confidence < 550:
-                        print_json(self.model.subject_names[prediction])
-                        sys.exit()
-                elif confidence > 1200:
-                        print_json("Stranger")
-                        sys.exit()
-            #cv2.imshow('videofacerec', imgout)
-            # Show image & exit on escape:
-            ch = cv2.waitKey(10)
-            if ch == 27:
-                break
+
+                if confidence < 550 and self.model.subject_names[prediction] is not None:
+                    user = self.model.subject_names[prediction]
+                else:
+                    user = ""
+
+                self.has_changed['user'] = self.user is False or user is not self.user
+
+                if self.has_changed['user']:
+                    self.user = user
+                    to_node("change", {"user": user, "confidence": confidence})
+
 
 if __name__ == '__main__':
-    from optparse import OptionParser
+    from argparse import ArgumentParser
     # model.pkl is a pickled (hopefully trained) PredictableModel, which is
     # used to make predictions. You can learn a model yourself by passing the
     # parameter -d (or --dataset) to learn the model from a given dataset.
 
-    usage = "usage: %prog [options] model_filename"
-    # Add options for training, resizing, validation and setting the camera id:
-    parser = OptionParser(usage=usage)
-    parser.add_option("-r", "--resize", action="store", type="string", dest="size", default="100x100", 
+    parser = ArgumentParser(description="face recognizer")
+    parser.add_argument("model_filename", type=str, default="model.pkl", nargs="?")
+    parser.add_argument("-r", "--resize", type=str, dest="size", default="100x100", 
         help="Resizes the given dataset to a given size in format [width]x[height] (default: 100x100).")
-    parser.add_option("-v", "--validate", action="store", dest="numfolds", type="int", default=None, 
+    parser.add_argument("-v", "--validate", dest="numfolds", type=int, default=None, 
         help="Performs a k-fold cross validation on the dataset, if given (default: None).")
-    parser.add_option("-t", "--train", action="store", dest="dataset", type="string", default=None,
+    parser.add_argument("-t", "--train", dest="dataset", type=str, default=None,
         help="Trains the model on the given dataset.")
-    parser.add_option("-i", "--id", action="store", dest="camera_id", type="int", default=0, 
+    parser.add_argument("-i", "--id", dest="camera_id", type=int, default=0, 
         help="Sets the Camera Id to be used (default: 0).")
-    parser.add_option("-c", "--cascade", action="store", dest="cascade_filename", default="haarcascade_frontalface_alt2.xml",
+    parser.add_argument("-c", "--cascade", dest="cascade_filename", type=str, default="haarcascade_frontalface_alt2.xml",
         help="Sets the path to the Haar Cascade used for the face detection part (default: haarcascade_frontalface_alt2.xml).")
-    # Show the options to the user:
+    args = parser.parse_args()
 
-    #parser.print_help()
-    #print ("Press [ESC] to exit the program!")
-    #print ("Script output:")
-    # Parse arguments:
-    (options, args) = parser.parse_args()
-    # Check if a model name was passed:
-    if len(args) == 0:
-        print ("[Error] No prediction model was given.")
-        sys.exit()
     # This model will be used (or created if the training parameter (-t, --train) exists:
-    model_filename = args[0]
+
     # Check if the given model exists, if no dataset was passed:
-    if (options.dataset is None) and (not os.path.exists(model_filename)):
-        print ("[Error] No prediction model found at '%s'." % model_filename)
+    if (args.dataset is None) and (not os.path.exists(args.model_filename)):
+        to_node("error", "No prediction model found at '%s'." % args.model_filename)
         sys.exit()
+
     # Check if the given (or default) cascade file exists:
-    if not os.path.exists(options.cascade_filename):
-        print ("[Error] No Cascade File found at '%s'." % options.cascade_filename)
+    if not os.path.exists(args.cascade_filename):
+        to_node("error", "No Cascade File found at '%s'." % args.cascade_filename)
         sys.exit()
     # We are resizing the images to a fixed size, as this is neccessary for some of
     # the algorithms, some algorithms like LBPH don't have this requirement. To 
     # prevent problems from popping up, we resize them with a default value if none
     # was given:
     try:
-        image_size = (int(options.size.split("x")[0]), int(options.size.split("x")[1]))
+        image_size = (int(args.size.split("x")[0]), int(args.size.split("x")[1]))
     except:
-        print ("[Error] Unable to parse the given image size '%s'. Please pass it in the format [width]x[height]!" % options.size)
+        to_node("error", "Unable to parse the given image size '%s'. Please pass it in the format [width]x[height]!" % args.size)
         sys.exit()
     # We have got a dataset to learn a new model from:
 
-    model = load_model(model_filename)
+    model = load_model(args.model_filename)
+    to_node("status", "Model '%s' loaded." % args.model_filename)
+
     # We operate on an ExtendedPredictableModel. Quit the application if this
     # isn't what we expect it to be:
     if not isinstance(model, ExtendedPredictableModel):
-        print ("[Error] The given model is not of type '%s'." % "ExtendedPredictableModel")
+        to_node("error", "The given model is not of type '%s'." % "ExtendedPredictableModel")
         sys.exit()
     # Now it's time to finally start the Application! It simply get's the model
     # and the image size the incoming webcam or video images are resized to:
     #print ("Starting application...")
     App(model=model,
-        camera_id=options.camera_id,
-        cascade_filename=options.cascade_filename).run()
+        camera_id=args.camera_id,
+        cascade_filename=args.cascade_filename).run()

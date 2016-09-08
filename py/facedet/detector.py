@@ -67,6 +67,8 @@ class CascadedDetector(Detector):
 	def __init__(self, cascade_fn="./cascades/haarcascade_frontalface_alt2.xml", scaleFactor=1.2, minNeighbors=5, minSize=(30,30)):
 		if not os.path.exists(cascade_fn):
 			raise IOError("No valid cascade found for path=%s." % cascade_fn)
+
+		self.cascade_fn = cascade_fn
 		self.cascade = cv2.CascadeClassifier(cascade_fn)
 		self.scaleFactor = scaleFactor
 		self.minNeighbors = minNeighbors
@@ -81,6 +83,11 @@ class CascadedDetector(Detector):
 			return np.ndarray((0,))
 		rects[:,2:] += rects[:,:2]
 		return rects
+
+	def __repr__(self):
+			cascade_repr = repr(self.cascade_fn)
+			return "CascadedDetector (cascade=%s)" % (cascade_repr)
+
 
 class SkinFaceDetector(Detector):
 	"""

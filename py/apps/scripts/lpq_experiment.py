@@ -122,9 +122,9 @@ def read_images(path, fileNameFilter=FileNameFilter("None"), sz=None):
                         X.append(np.asarray(im, dtype=np.uint8))
                         y.append(c)
                     except IOError, (errno, strerror):
-                        print "I/O error({0}): {1}".format(errno, strerror)
+                        print("I/O error({0}): {1}".format(errno, strerror))
                     except:
-                        print "Unexpected error:", sys.exc_info()[0]
+                        print("Unexpected error:", sys.exc_info()[0])
                         raise         
             c = c+1
     return [X,y]
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     # your image data:
     if len(sys.argv) < 2:
 
-        print "USAGE: lpq_experiment.py </path/to/images>"
+        print("USAGE: lpq_experiment.py </path/to/images>")
         sys.exit()
     # Define filters for the Dataset:
     yale_subset_0_40 = YaleBaseFilter(0, 40, 0, 40)
@@ -211,20 +211,20 @@ if __name__ == "__main__":
     model1 = PredictableModel(feature=SpatialHistogram(lbp_operator=LPQ()), classifier=NearestNeighbor(dist_metric=ChiSquareDistance(), k=1))
     # The sigmas we'll apply for each run:
     sigmas = [0]
-    print 'The experiment will be run %s times!' % ITER_MAX
+    print('The experiment will be run %s times!' % ITER_MAX)
     # Initialize experiments (with empty results):
     experiments = {}
     experiments['lbp_model'] = { 'model': model0, 'results' : {}, 'color' : 'r', 'linestyle' : '--', 'marker' : '*'} 
     experiments['lpq_model'] = { 'model': model1, 'results' : {}, 'color' : 'b', 'linestyle' : '--', 'marker' : 's'}
     # Loop to acquire the results for each experiment:
     for sigma in sigmas:
-        print "Setting sigma=%s" % sigma
+        print("Setting sigma=%s" % sigma)
         for key, value in experiments.iteritems():
-            print 'Running experiment for model=%s' % key
+            print('Running experiment for model=%s' % key)
             # Define the validators for the model:
             cv0 = SimpleValidation(value['model'])
             for iteration in xrange(ITER_MAX):
-                print "Repeating experiment %s/%s." % (iteration + 1, ITER_MAX)
+                print("Repeating experiment %s/%s." % (iteration + 1, ITER_MAX))
                 # Split dataset according to the papers description:
                 Xtrain, ytrain, Xtest, ytest = partition_data(X,y)
                 # Apply a gaussian blur on the images:
@@ -238,7 +238,7 @@ if __name__ == "__main__":
             # Calculate overall precision:
             prec = precision(true_positives,false_positives)
             # Store the result:
-            print key
+            print(key)
             experiments[key]['results'][sigma] = prec
 
     # Make a nice plot of this textual output:
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     plot_legend = []
     # Add the Validation results:
     for experiment_name, experiment_definition in experiments.iteritems():
-        print key, experiment_definition
+        print(key, experiment_definition)
         results = experiment_definition['results']
         (xvalues, yvalues) = zip(*[(k,v) for k,v in results.iteritems()])
         # Add to the legend:

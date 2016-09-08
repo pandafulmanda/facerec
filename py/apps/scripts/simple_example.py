@@ -57,9 +57,9 @@ def read_images(path, sz=None):
                     X.append(np.asarray(im, dtype=np.uint8))
                     y.append(c)
                 except IOError, (errno, strerror):
-                    print "I/O error({0}): {1}".format(errno, strerror)
+                    print("I/O error({0}): {1}".format(errno, strerror))
                 except:
-                    print "Unexpected error:", sys.exc_info()[0]
+                    print("Unexpected error:", sys.exc_info()[0])
                     raise
             c = c+1
     return [X,y]
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     # the tutorial coming with this source code on how to prepare
     # your image data:
     if len(sys.argv) < 2:
-        print "USAGE: facerec_demo.py </path/to/images>"
+        print("USAGE: facerec_demo.py </path/to/images>")
         sys.exit()
     # Now read in the image data. This must be a valid path!
     [X,y] = read_images(sys.argv[1])
