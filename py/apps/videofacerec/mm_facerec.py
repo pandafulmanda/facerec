@@ -130,15 +130,15 @@ class App(object):
             to_node("error", "Camera '%s' unable to connect." % camera_id)
             sys.exit()
 
-        self.user = False
-        self.faces = False
+        self.user = None
+        self.faces = None
         self.has_changed = {"face_count": False, "user": False}
         to_node("status", {"camera": str(camera_id), "model": str(model), "detector": str(self.detector)})
 
     def find_faces(self, img):
         faces = self.detector.detect(img)
 
-        self.has_changed['face_count'] = self.faces is False or len(faces) is not len(self.faces)
+        self.has_changed['face_count'] = self.faces is None or len(faces) is not len(self.faces)
         self.faces = faces
 
         return(faces)
@@ -179,7 +179,7 @@ class App(object):
                 else:
                     user = ""
 
-                self.has_changed['user'] = self.user is False or user is not self.user
+                self.has_changed['user'] = self.user is None or user is not self.user
 
                 if self.has_changed['user']:
                     self.user = user
